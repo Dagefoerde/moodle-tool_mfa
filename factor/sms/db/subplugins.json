@@ -1,0 +1,5 @@
+{
+    "plugintypes": {
+        "smsgateway": "admin/tool/factor/sms/gateway"
+    }
+}

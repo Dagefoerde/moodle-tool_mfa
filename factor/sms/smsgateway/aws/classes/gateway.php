@@ -29,6 +29,8 @@ namespace factor_sms;
 defined('MOODLE_INTERNAL') || die();
 
 class gateway implements \factor_sms\local\smsgateway\smsgateway {
+    public static $name = 'aws';
+
     public function send_sms_message($message, $target) {
         // Instantiate AWS SMS gateway object.
         // Send message and return status

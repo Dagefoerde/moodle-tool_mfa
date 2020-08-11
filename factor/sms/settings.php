@@ -33,6 +33,20 @@ $settings->add(new admin_setting_configtext('factor_sms/weight',
     new lang_string('settings:weight', 'tool_mfa'),
     new lang_string('settings:weight_help', 'tool_mfa'), 100, PARAM_INT));
 
+// Gateway selection.
+$gateways = \factor_sms\plugininfo\smsgateway::get_gateways();
+$selectopts = ['none' => get_string('nogateway', 'factor_sms')];
+foreach ($gateways as $gateway) {
+    $selectedopts[$gateway->name] = get_string('pluginname', 'smsgateway_' . $gateway->name);
+}
+$settings->add(new admin_setting_configselect('factor_sms/selectedgateway',
+    get_string('settings:selectedgateway', 'factor_sms'),
+    get_string('settings:selectedgateway_help', 'factor_sms'), 'none', $selectopts));
+
+$currentselection = get_config('factor_sms', 'selectedgateway');
+if ($currentselection !== 'none') {
+    \factor_sms\plugininfo\smsgateway::load_gateway_settings($currentselection);
+}
 /**$settings->
 
 // AWS Settings.

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * SMS Gateway interface
+ * AWS SNS SMS Gateway class
  *
  * @package     factor_sms
  * @author      Peter Burnett <peterburnett@catalyst-au.net>
@@ -23,16 +23,30 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace factor_sms\local;
+namespace factor_sms\local\smsgateway;
 
 defined('MOODLE_INTERNAL') || die();
 
-interface smsgateway {
-    /**
-     * @param string $messagecontent the content to send in the SMS message.
-     * @param string $target the destination for the message.
-     *
-     * @return bool true on message send success
-     */
-    public function send_sms_message($messagecontent, $target);
+require_once($CFG->dirroot . '/local/aws/sdk/aws-autoloader.php');
+use Aws\Sns\SnsClient;
+
+class aws_sns implements gateway_interface {
+    public function send_sms_message($messagecontent, $target) {
+        $config = get_config('factor_sms');
+
+        $client = new SnsClient([
+            'version' => 'latest',
+            'region' => $config->api_region,
+            'credentials' => [
+                'key' => $config->api_key,
+                'secret' => $config->api_secret
+            ],
+            'http' => ['proxy' => \local_aws\local\aws_helper::get_proxy_string()]
+        ]);
+
+        $client->publish([
+            'Message' => $messagecontent,
+            'PhoneNumber' => $target
+        ]);
+    }
 }

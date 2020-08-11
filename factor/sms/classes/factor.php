@@ -137,7 +137,7 @@ class factor extends object_factor_base {
         $duration = get_config('factor_sms', 'duration');
         $newcode = random_int(100000, 999999);
 
-        $number = $USER->phone1;
+        $number = $USER->phone2;
 
         if (empty($record)) {
             // No code active, generate new code.
@@ -172,9 +172,14 @@ class factor extends object_factor_base {
     }
 
     private function sms_verification_code($instanceid) {
+        global $DB;
+
         // Here we should get the information, then construct the message.
-        $instance = $DB->get_records('tool_mfa', ['id' => $instanceid]);
+        $instance = $DB->get_record('tool_mfa', ['id' => $instanceid]);
         $user = \core_user::get_user($instance->userid);
+        $phonenumber = $user->phone2;
+        $gateway = new \factor_sms\local\smsgateway\aws_sns();
+        $gateway->send_sms_message($instance->secret, $phonenumber);
     }
 
     /**

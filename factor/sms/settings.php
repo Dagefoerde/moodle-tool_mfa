@@ -33,22 +33,6 @@ $settings->add(new admin_setting_configtext('factor_sms/weight',
     new lang_string('settings:weight', 'tool_mfa'),
     new lang_string('settings:weight_help', 'tool_mfa'), 100, PARAM_INT));
 
-// Gateway selection.
-$gateways = \factor_sms\plugininfo\smsgateway::get_gateways();
-$selectopts = ['none' => get_string('nogateway', 'factor_sms')];
-foreach ($gateways as $gateway) {
-    $selectedopts[$gateway->name] = get_string('pluginname', 'smsgateway_' . $gateway->name);
-}
-$settings->add(new admin_setting_configselect('factor_sms/selectedgateway',
-    get_string('settings:selectedgateway', 'factor_sms'),
-    get_string('settings:selectedgateway_help', 'factor_sms'), 'none', $selectopts));
-
-$currentselection = get_config('factor_sms', 'selectedgateway');
-if ($currentselection !== 'none') {
-    \factor_sms\plugininfo\smsgateway::load_gateway_settings($currentselection);
-}
-/**$settings->
-
 // AWS Settings.
 $settings->add(new admin_setting_configtext('factor_sms/api_key',
     get_string('settings:aws:key', 'factor_sms'),
@@ -71,12 +55,12 @@ $regionoptions = array(
     'ap-southeast-2' => 'Asia Pacific (Sydney)',
     'eu-west-1'      => 'EU (Ireland)',
 );
-$settings->add(new admin_setting_configselect('local_smartmedia/api_region',
-    get_string('settings:aws:region', 'local_smartmedia'),
-    get_string('settings:aws:region_help', 'local_smartmedia'),
+$settings->add(new admin_setting_configselect('factor_sms/api_region',
+    get_string('settings:aws:region', 'factor_sms'),
+    get_string('settings:aws:region_help', 'factor_sms'),
     'ap-southeast-2',
     $regionoptions));
 
-$settings->add(new admin_setting_configduration('factor_email/duration',
-    get_string('settings:duration', 'factor_email'),
-    get_string('settings:duration_help', 'factor_email'), 30 * MINSECS, MINSECS));**/
+$settings->add(new admin_setting_configduration('factor_sms/duration',
+    get_string('settings:duration', 'factor_sms'),
+    get_string('settings:duration_help', 'factor_sms'), 30 * MINSECS, MINSECS));

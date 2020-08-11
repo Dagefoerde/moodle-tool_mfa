@@ -23,7 +23,7 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace factor_sms\local\smsgateway;
+namespace factor_sms\local;
 
 defined('MOODLE_INTERNAL') || die();
 

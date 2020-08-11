@@ -28,7 +28,39 @@ namespace factor_sms\plugininfo;
 defined('MOODLE_INTERNAL') || die();
 
 class smsgateway extends \core\plugininfo\base {
-    //get_plugins();
+    public static function get_gateways() {
+        $return = array();
+        $gateways = \core_plugin_manager::instance()->get_plugins_of_type('smsgateway');
 
-    //get_enabled_plugins();
+        foreach ($gateways as $gateway) {
+            $classname = '\\smsgateway_'.$gateway->name.'\\gateway';
+            if (class_exists($classname)) {
+                $return[] = new $classname($gateway->name);
+            }
+        }
+        return $return;
+    }
+
+    public static function get_gateway($gatewayname) {
+        $classname = '\\smsgateway_' . $gatewayname . '\\gateway';
+        if (class_exists($classname)) {
+            return new $classname($gatewayname);
+        } else {
+            return null;
+        }
+    }
+
+    public static function get_enabled_gateway() {
+        $selected = get_config('factor_sms', 'selectedgateway');
+        $gatewayinstance = self::get_gateway($selected);
+        if (!empty($gatewayinstance)) {
+            return $gatewayinstance;
+        } else {
+            return null;
+        }
+    }
+
+    public static function load_gateway_settings($gatewayname) {
+
+    }
 }

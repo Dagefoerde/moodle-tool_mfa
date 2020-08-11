@@ -15,20 +15,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
+ * Language strings.
  *
- * @package     factor_sms
- * @subpackage  tool_mfa
+ * @package     smsgateway_aws
  * @author      Peter Burnett <peterburnett@catalyst-au.net>
  * @copyright   Catalyst IT
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->version      = 2020081100;      // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires     = 2017051500.00;   // Support back to 3.3 - Totara 12. Patches required.
-$plugin->component    = 'factor_sms';
-$plugin->release      = 'v0.1';
-$plugin->maturity     = MATURITY_STABLE;
-$plugin->dependencies = array('tool_mfa' => 2019102400);
+$string['pluginname'] = 'AWS SMS gateway';
+$string['privacy:metadata'] = 'The AWS SMS gateway plugin does not store any personal data';

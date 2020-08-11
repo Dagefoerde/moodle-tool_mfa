@@ -17,7 +17,7 @@
 /**
  * Plugin version and other meta-data are defined here.
  *
- * @package     factor_sms
+ * @package     smsgateway_aws
  * @subpackage  tool_mfa
  * @author      Peter Burnett <peterburnett@catalyst-au.net>
  * @copyright   Catalyst IT
@@ -28,7 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 
 $plugin->version      = 2020081100;      // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires     = 2017051500.00;   // Support back to 3.3 - Totara 12. Patches required.
-$plugin->component    = 'factor_sms';
+$plugin->component    = 'smsgateway_aws';
 $plugin->release      = 'v0.1';
 $plugin->maturity     = MATURITY_STABLE;
-$plugin->dependencies = array('tool_mfa' => 2019102400);
+$plugin->dependencies = array('factor_sms' => 2019102400, 'local_aws' => 2020061500);

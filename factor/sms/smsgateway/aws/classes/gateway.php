@@ -15,20 +15,20 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
+ * SMS Factor class.
  *
- * @package     factor_sms
- * @subpackage  tool_mfa
+ * @package     smsgateway_aws
+ * @subpackage  factor_sms
  * @author      Peter Burnett <peterburnett@catalyst-au.net>
  * @copyright   Catalyst IT
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace factor_sms;
+
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version      = 2020081100;      // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires     = 2017051500.00;   // Support back to 3.3 - Totara 12. Patches required.
-$plugin->component    = 'factor_sms';
-$plugin->release      = 'v0.1';
-$plugin->maturity     = MATURITY_STABLE;
-$plugin->dependencies = array('tool_mfa' => 2019102400);
+// Implement interface here.
+class gateway {
+
+}

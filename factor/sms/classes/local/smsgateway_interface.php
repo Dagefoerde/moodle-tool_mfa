@@ -15,24 +15,24 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * SMS Factor class.
+ * SMS Gateway interface
  *
- * @package     smsgateway_aws
- * @subpackage  factor_sms
+ * @package     factor_sms
  * @author      Peter Burnett <peterburnett@catalyst-au.net>
  * @copyright   Catalyst IT
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace factor_sms;
+namespace factor_sms\local\smsgateway;
 
 defined('MOODLE_INTERNAL') || die();
 
-class gateway implements \factor_sms\local\smsgateway\smsgateway {
-    public function send_sms_message($message, $target) {
-        // Instantiate AWS SMS gateway object.
-        // Send message and return status
-
-        return true;
-    }
+interface smsgateway {
+    /**
+     * @param string $messagecontent the content to send in the SMS message.
+     * @param string $target the destination for the message.
+     *
+     * @return bool true on message send success
+     */
+    public function send_sms_message($messagecontent, $target);
 }

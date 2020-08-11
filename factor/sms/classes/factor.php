@@ -124,16 +124,16 @@ class factor extends object_factor_base {
     private function generate_and_sms_code() {
         global $DB, $USER;
 
-        // Get instance that isnt parent email type (label check).
+        // Get instance that isnt parent SMS type (empty label check).
         // This check must exclude the main singleton record, with the label as the email.
         // It must only grab the record with the user agent as the label.
         $sql = 'SELECT *
                   FROM {tool_mfa}
                  WHERE userid = ?
                    AND factor = ?
-               AND NOT label = ?';
+               AND label IS NOT NULL';
 
-        $record = $DB->get_record_sql($sql, array($USER->id, 'email', $USER->email));
+        $record = $DB->get_record_sql($sql, array($USER->id, 'sms'));
         $duration = get_config('factor_sms', 'duration');
         $newcode = random_int(100000, 999999);
 
@@ -218,7 +218,8 @@ class factor extends object_factor_base {
         global $DB, $USER;
         // Delete all SMS records except base record.
         $selectsql = 'userid = ?
-                  AND factor = ?';
+                  AND factor = ?
+                  AND label IS NOT NULL';
         $DB->delete_records_select('tool_mfa', $selectsql, array($USER->id, 'sms'));
 
         // Update factor timeverified.

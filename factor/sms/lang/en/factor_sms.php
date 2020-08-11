@@ -25,7 +25,15 @@
 
 $string['pluginname'] = 'SMS factor';
 $string['privacy:metadata'] = 'The SMS factor plugin does not store any personal data';
-
-// Subplugin strings.
-$string['subplugintype_smsgateway'] = 'SMS gateway';
-$string['subplugintype_smsgateway_plural'] = 'SMS gateways';
+$string['loginsubmit'] = 'Verify Code';
+$string['loginskip'] = "I didn't receive a code";
+$string['settings:aws:key'] = 'Key';
+$string['settings:aws:key_help'] = 'Amazon API key credential.';
+$string['settings:aws:secret'] = 'Secret';
+$string['settings:aws:secret_help'] = 'Amazon API secret credential.';
+$string['settings:aws:region'] = 'Region';
+$string['settings:aws:region_help'] = 'Amazon API gateway region.';
+$string['settings:duration'] = 'Validity duration';
+$string['settings:duration_help'] = 'The period of time that the code is valid.';
+$string['verificationcode'] = 'Enter verification code for confirmation';
+$string['verificationcode_help'] = 'Verification code has been sent to your email address';

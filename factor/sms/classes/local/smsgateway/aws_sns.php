@@ -48,5 +48,7 @@ class aws_sns implements gateway_interface {
             'Message' => $messagecontent,
             'PhoneNumber' => $target
         ]);
+
+        echo $status;
     }
 }

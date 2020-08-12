@@ -117,7 +117,7 @@ class factor extends object_factor_base {
     }
 
     /**
-     * Generates and emails the code for login to the user, stores codes in DB.
+     * Generates and sms' the code for login to the user, stores codes in DB.
      *
      * @return void
      */
@@ -172,14 +172,17 @@ class factor extends object_factor_base {
     }
 
     private function sms_verification_code($instanceid) {
-        global $DB;
+        global $CFG, $DB, $SITE;
 
         // Here we should get the information, then construct the message.
         $instance = $DB->get_record('tool_mfa', ['id' => $instanceid]);
         $user = \core_user::get_user($instance->userid);
+        $content = ['code' => $instance->secret, 'site' => $SITE->fullname, 'url' => $CFG->wwwroot];
+        $message = get_string('smsstring', 'factor_sms', $content);
+
         $phonenumber = $user->phone2;
         $gateway = new \factor_sms\local\smsgateway\aws_sns();
-        $gateway->send_sms_message($instance->secret, $phonenumber);
+        $gateway->send_sms_message($message, $phonenumber);
     }
 
     /**

@@ -35,5 +35,8 @@ $string['settings:aws:region'] = 'Region';
 $string['settings:aws:region_help'] = 'Amazon API gateway region.';
 $string['settings:duration'] = 'Validity duration';
 $string['settings:duration_help'] = 'The period of time that the code is valid.';
+$string['smsstring'] = '{$a->code} is your {$a->site} authentication code.
+
+@{$a->url} #{$a->code}';
 $string['verificationcode'] = 'Enter verification code for confirmation';
 $string['verificationcode_help'] = 'Verification code has been sent to your email address';

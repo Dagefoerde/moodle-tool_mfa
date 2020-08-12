@@ -43,12 +43,19 @@ class aws_sns implements gateway_interface {
             ],
             'http' => ['proxy' => \local_aws\local\aws_helper::get_proxy_string()]
         ]);
+        // These messages need to be transactional.
+        $client->SetSMSAttributes([
+            'attributes' => [
+                'DefaultSMSType' => 'Transactional',
+            ],
+        ]);
 
+        // TODO Phone number mangling here to make it happy.
+
+        // Actually send the message.
         $client->publish([
             'Message' => $messagecontent,
             'PhoneNumber' => $target
         ]);
-
-        echo $status;
     }
 }

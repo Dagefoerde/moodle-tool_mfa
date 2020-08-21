@@ -37,10 +37,9 @@ class factor extends object_factor_base {
      * {@inheritDoc}
      */
     public function login_form_definition($mform) {
-
         $mform->addElement('text', 'verificationcode', get_string('verificationcode', 'factor_sms'),
             ['autocomplete' => 'one-time-code']);
-        $mform->setType("verificationcode", PARAM_ALPHANUM);
+        $mform->setType("verificationcode", PARAM_INT);
         return $mform;
     }
 
@@ -50,7 +49,10 @@ class factor extends object_factor_base {
      * {@inheritDoc}
      */
     public function login_form_definition_after_data($mform) {
+        global $USER;
+
         $this->generate_and_sms_code();
+        $mform = $this->add_redacted_sent_message($mform);
         return $mform;
     }
 
@@ -69,6 +71,89 @@ class factor extends object_factor_base {
         return $return;
     }
 
+    public function setup_factor_form_definition($mform) {
+        global $OUTPUT, $USER;
+        if (empty($USER->phone2)) {
+            // User has no phone number. Send them to profile to set it.
+            $profurl = new \moodle_url('user/edit.php', ['id' => $USER->id]);
+            $proflink = \html_writer::link($profurl, get_string('profilelink', 'factor_sms'));
+            $mform->addElement('html', $OUTPUT->notification(get_string('profilesetnumber', 'factor_sms', $proflink), 'notifyinfo'));
+        } else {
+            $mform->addElement('text', 'verificationcode', get_string('verificationcode', 'factor_sms'),
+            ['autocomplete' => 'one-time-code']);
+            $mform->setType("verificationcode", PARAM_INT);
+        }
+    }
+
+    public function setup_factor_form_definition_after_data($mform) {
+        global $USER, $SESSION;
+
+        // Nothing if they dont have a number added.
+        if (empty($USER->phone2)) {
+            return $mform;
+        }
+
+        //TODO this needs logic around regenerating/changing number.
+
+        if (empty($SESSION->mfa_sms_setup_code)) {
+            // They need a code to verify this number.
+            // Lets generate a code and send it in place, we don't need this to get to the DB.
+            $code = random_int(100000, 999999);
+
+            $this->sms_verification_code(0, $code);
+            $SESSION->mfa_sms_setup_code = $code;
+            $mform = $this->add_redacted_sent_message($mform);
+        } else {
+            // Dont generate or send, just tell them you did!
+            $mform = $this->add_redacted_sent_message($mform);
+        }
+    }
+
+    public function setup_factor_form_validation($data){
+        global $SESSION;
+
+        $errors = [];
+        if ($data['verificationcode'] !== $SESSION->mfa_sms_setup_code) {
+            $errors['verificationcode'] = get_string('wrongcode', 'factor_sms');
+        }
+
+        return $errors;
+    }
+
+    public function setup_user_factor($data) {
+        global $DB, $USER;
+
+        $row = new \stdClass();
+        $row->userid = $USER->id;
+        $row->factor = $this->name;
+        $row->secret = '';
+        $row->label = $data->$USER->phone2;
+        $row->timecreated = time();
+        $row->createdfromip = $USER->lastip;
+        $row->timemodified = time();
+        $row->lastverified = time();
+        $row->revoked = 0;
+
+        $id = $DB->insert_record('tool_mfa', $row);
+        $record = $DB->get_record('tool_mfa', array('id' => $id));
+        $this->create_event_after_factor_setup($USER);
+
+        return $record;
+    }
+
+    private function add_redacted_sent_message($mform) {
+        global $USER;
+
+        // Create partial num for display.
+        $len = strlen($USER->phone2);
+        // Keep last 3 characters.
+        $redacted = str_repeat('x', $len - 3);
+        $redacted .= substr($USER->phone2, -3);
+
+        $mform->addElement('html', \html_writer::tag('p', get_string('smssent', 'factor_sms', $redacted) . '<br>'));
+        return $mform;
+    }
+
     /**
      * SMS Factor implementation.
      *
@@ -77,25 +162,10 @@ class factor extends object_factor_base {
     public function get_all_user_factors($user) {
         global $DB;
 
-        $records = $DB->get_records('tool_mfa', array(
+        return $DB->get_records('tool_mfa', array(
             'userid' => $user->id,
             'factor' => $this->name,
         ));
-
-        if (!empty($records)) {
-            return $records;
-        }
-
-        // Null records returned, build new record.
-        $record = array(
-            'userid' => $user->id,
-            'factor' => $this->name,
-            'createdfromip' => $user->lastip,
-            'timecreated' => time(),
-            'revoked' => 0,
-        );
-        $record['id'] = $DB->insert_record('tool_mfa', $record, true);
-        return [(object) $record];
     }
 
     /**
@@ -124,20 +194,25 @@ class factor extends object_factor_base {
     private function generate_and_sms_code() {
         global $DB, $USER;
 
-        // Get instance that isnt parent SMS type (empty label check).
-        // This check must exclude the main singleton record, with the label as the email.
+        // Get instance that isnt parent SMS type (empty secret check).
+        // This check must exclude the main singleton record, with an empty secret.
         // It must only grab the record with the user agent as the label.
         $sql = 'SELECT *
                   FROM {tool_mfa}
                  WHERE userid = ?
                    AND factor = ?
-               AND label IS NOT NULL';
+                   AND secret IS NOT NULL';
 
-        $record = $DB->get_record_sql($sql, array($USER->id, 'sms'));
+        $record = $DB->get_record_sql($sql, [$USER->id, $this->name]);
         $duration = get_config('factor_sms', 'duration');
         $newcode = random_int(100000, 999999);
 
-        $number = $USER->phone2;
+        $numsql = 'SELECT label
+                     FROM {tool_mfa}
+                    WHERE userid = ?
+                      AND factor = ?
+                      AND secret IS NULL';
+        $number = $DB->get_field_sql($numsql, [$USER->id, $this->name]);
 
         if (empty($record)) {
             // No code active, generate new code.
@@ -171,13 +246,14 @@ class factor extends object_factor_base {
         }
     }
 
-    private function sms_verification_code($instanceid) {
+    private function sms_verification_code($instanceid, $rawcode = null) {
         global $CFG, $DB, $SITE;
 
         // Here we should get the information, then construct the message.
         $instance = $DB->get_record('tool_mfa', ['id' => $instanceid]);
         $user = \core_user::get_user($instance->userid);
-        $content = ['code' => $instance->secret, 'site' => $SITE->fullname, 'url' => $CFG->wwwroot];
+        $content = ['site' => $SITE->fullname, 'url' => $CFG->wwwroot];
+        $content['code'] = !empty($rawcode) ? $rawcode : $instance->secret;
         $message = get_string('smsstring', 'factor_sms', $content);
 
         $phonenumber = $user->phone2;

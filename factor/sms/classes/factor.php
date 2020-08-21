@@ -127,7 +127,7 @@ class factor extends object_factor_base {
         $row->userid = $USER->id;
         $row->factor = $this->name;
         $row->secret = '';
-        $row->label = $data->$USER->phone2;
+        $row->label = $USER->phone2;
         $row->timecreated = time();
         $row->createdfromip = $USER->lastip;
         $row->timemodified = time();
@@ -247,16 +247,15 @@ class factor extends object_factor_base {
     }
 
     private function sms_verification_code($instanceid, $rawcode = null) {
-        global $CFG, $DB, $SITE;
+        global $CFG, $DB, $SITE, $USER;
 
         // Here we should get the information, then construct the message.
         $instance = $DB->get_record('tool_mfa', ['id' => $instanceid]);
-        $user = \core_user::get_user($instance->userid);
         $content = ['site' => $SITE->fullname, 'url' => $CFG->wwwroot];
         $content['code'] = !empty($rawcode) ? $rawcode : $instance->secret;
+        $phonenumber = !empty($rawcode) ? $USER->phone2 : $instance->label;
         $message = get_string('smsstring', 'factor_sms', $content);
 
-        $phonenumber = $user->phone2;
         $gateway = new \factor_sms\local\smsgateway\aws_sns();
         $gateway->send_sms_message($message, $phonenumber);
     }

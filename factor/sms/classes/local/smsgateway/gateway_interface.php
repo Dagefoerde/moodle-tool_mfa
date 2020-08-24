@@ -34,5 +34,5 @@ interface gateway_interface {
      *
      * @return bool true on message send success
      */
-    public function send_sms_message($messagecontent, $target);
+    public function send_sms_message($messagecontent, $phonenumber);
 }

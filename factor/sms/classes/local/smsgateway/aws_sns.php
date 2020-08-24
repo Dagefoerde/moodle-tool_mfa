@@ -31,7 +31,9 @@ require_once($CFG->dirroot . '/local/aws/sdk/aws-autoloader.php');
 use Aws\Sns\SnsClient;
 
 class aws_sns implements gateway_interface {
-    public function send_sms_message($messagecontent, $target) {
+    public function send_sms_message($messagecontent, $phonenumber) {
+        global $CFG, $SITE;
+
         $config = get_config('factor_sms');
 
         $client = new SnsClient([
@@ -43,19 +45,30 @@ class aws_sns implements gateway_interface {
             ],
             'http' => ['proxy' => \local_aws\local\aws_helper::get_proxy_string()]
         ]);
+
+        // Setup the sender information.
+        $senderid = !empty($CFG->supportname) ? $CFG->supportname : $SITE->fullname;
+        // Remove spaces from ID.
+        $senderid = str_replace(' ', '', (trim($senderid)));
+
         // These messages need to be transactional.
         $client->SetSMSAttributes([
             'attributes' => [
                 'DefaultSMSType' => 'Transactional',
+                'DefaultSenderID' => $senderid,
             ],
         ]);
 
-        // TODO Phone number mangling here to make it happy.
+        // Phone number mangling here to make it happy.
+        if (strpos($phonenumber, '+' !== 0)) {
+            // Not in the right standard. Transform it.
+            // TODO AWS Pinpoint verification.
+        }
 
         // Actually send the message.
         $client->publish([
             'Message' => $messagecontent,
-            'PhoneNumber' => $target
+            'PhoneNumber' => $phonenumber,
         ]);
     }
 }

@@ -38,7 +38,12 @@ class factor extends object_factor_base {
      */
     public function login_form_definition($mform) {
         $mform->addElement('text', 'verificationcode', get_string('verificationcode', 'factor_sms'),
-            ['autocomplete' => 'one-time-code']);
+            [
+                'autocomplete' => 'one-time-code',
+                'autofocus' => 'autofocus',
+                'inputmode' => 'numeric',
+                'pattern'   => '[0-9]*',
+            ]);
         $mform->setType("verificationcode", PARAM_INT);
         return $mform;
     }
@@ -49,10 +54,8 @@ class factor extends object_factor_base {
      * {@inheritDoc}
      */
     public function login_form_definition_after_data($mform) {
-        global $USER;
-
-        $this->generate_and_sms_code();
-        $mform = $this->add_redacted_sent_message($mform);
+        $instanceid = $this->generate_and_sms_code();
+        $mform = $this->add_redacted_sent_message($mform, $instanceid);
         return $mform;
     }
 
@@ -65,7 +68,7 @@ class factor extends object_factor_base {
         $return = array();
 
         if (!$this->check_verification_code($data['verificationcode'])) {
-            $return['verificationcode'] = get_string('error:wrongverification', 'factor_email');
+            $return['verificationcode'] = get_string('wrongcode', 'factor_sms');
         }
 
         return $return;
@@ -92,8 +95,6 @@ class factor extends object_factor_base {
         if (empty($USER->phone2)) {
             return $mform;
         }
-
-        //TODO this needs logic around regenerating/changing number.
 
         if (empty($SESSION->mfa_sms_setup_code)) {
             // They need a code to verify this number.
@@ -144,14 +145,26 @@ class factor extends object_factor_base {
         return $record;
     }
 
-    private function add_redacted_sent_message($mform) {
-        global $USER;
+    /**
+     * Adds a redacted sent messaage to the mform with the users number.
+     *
+     * @param stdClass $mform the form to modify.
+     * @param int|null $instanceid the instance to take the number from.
+     */
+    private function add_redacted_sent_message($mform, $instanceid = null) {
+        global $DB, $USER;
+
+        if (!empty($instanceid)) {
+            $number = $DB->get_field('tool_mfa', 'label', ['id' => $instanceid]);
+        } else {
+            $number = $USER->phone2;
+        }
 
         // Create partial num for display.
-        $len = strlen($USER->phone2);
+        $len = strlen($number);
         // Keep last 3 characters.
         $redacted = str_repeat('x', $len - 3);
-        $redacted .= substr($USER->phone2, -3);
+        $redacted .= substr($number, -3);
 
         $mform->addElement('html', \html_writer::tag('p', get_string('smssent', 'factor_sms', $redacted) . '<br>'));
         return $mform;
@@ -194,6 +207,11 @@ class factor extends object_factor_base {
         return true;
     }
 
+    /**
+     * SMS Factor implementation
+     *
+     * {@inheritDoc}
+     */
     public function show_setup_buttons() {
         global $DB, $USER;
         // If there is already a factor setup, don't allow multiple (for now).
@@ -220,7 +238,7 @@ class factor extends object_factor_base {
     /**
      * Generates and sms' the code for login to the user, stores codes in DB.
      *
-     * @return void
+     * @return int the instance ID being used.
      */
     private function generate_and_sms_code() {
         global $DB, $USER;
@@ -261,6 +279,7 @@ class factor extends object_factor_base {
                 'revoked' => 0,
             ), true);
             $this->sms_verification_code($instanceid);
+            return $instanceid;
 
         } else if ($record->timecreated + $duration < time()) {
             // Old code found. Keep id, update fields.
@@ -276,9 +295,19 @@ class factor extends object_factor_base {
             ));
             $instanceid = $record->id;
             $this->sms_verification_code($instanceid);
+            return $instanceid;
         }
+        return $record->id;
     }
 
+    /**
+     * This function sends an SMS code to the user based on the instanceid provided.
+     * If rawcode is provided, it will send the raw code through to the phone number in the user profile.
+     *
+     * @param int $instanceid the factor instance to send the code for.
+     * @param int|null $rawcode If provided, a raw code to send to the users profile phone no.
+     * @return void
+     */
     private function sms_verification_code($instanceid, $rawcode = null) {
         global $CFG, $DB, $SITE, $USER;
 

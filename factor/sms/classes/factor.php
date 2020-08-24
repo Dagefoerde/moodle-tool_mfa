@@ -121,7 +121,7 @@ class factor extends object_factor_base {
     }
 
     public function setup_user_factor($data) {
-        global $DB, $USER;
+        global $DB, $SESSION, $USER;
 
         $row = new \stdClass();
         $row->userid = $USER->id;
@@ -137,6 +137,9 @@ class factor extends object_factor_base {
         $id = $DB->insert_record('tool_mfa', $row);
         $record = $DB->get_record('tool_mfa', array('id' => $id));
         $this->create_event_after_factor_setup($USER);
+
+        // Remove session code.
+        unset($SESSION->mfa_sms_setup_code);
 
         return $record;
     }
@@ -162,10 +165,15 @@ class factor extends object_factor_base {
     public function get_all_user_factors($user) {
         global $DB;
 
-        return $DB->get_records('tool_mfa', array(
-            'userid' => $user->id,
-            'factor' => $this->name,
-        ));
+        $sql = 'SELECT *
+                  FROM {tool_mfa}
+                 WHERE userid = ?
+                   AND factor = ?
+                   AND label IS NOT NULL
+                   AND revoked = 0
+                   AND secret = ?';
+
+        return $DB->get_records_sql($sql, [$user->id, $this->name, '']);
     }
 
     /**
@@ -186,6 +194,29 @@ class factor extends object_factor_base {
         return true;
     }
 
+    public function show_setup_buttons() {
+        global $DB, $USER;
+        // If there is already a factor setup, don't allow multiple (for now).
+        $sql = 'SELECT *
+                  FROM {tool_mfa}
+                 WHERE userid = ?
+                   AND factor = ?
+                   AND secret = ?
+                   AND revoked = 0';
+
+        $record = $DB->get_record_sql($sql, [$USER->id, $this->name, '']);
+        return !empty($record) ? false : true;
+    }
+
+    /**
+     * SMS Factor implementation.
+     *
+     * {@inheritDoc}
+     */
+    public function has_revoke() {
+        return true;
+    }
+
     /**
      * Generates and sms' the code for login to the user, stores codes in DB.
      *
@@ -201,9 +232,10 @@ class factor extends object_factor_base {
                   FROM {tool_mfa}
                  WHERE userid = ?
                    AND factor = ?
-                   AND secret IS NOT NULL';
+                   AND secret <> ?
+                   AND revoked = 0';
 
-        $record = $DB->get_record_sql($sql, [$USER->id, $this->name]);
+        $record = $DB->get_record_sql($sql, [$USER->id, $this->name, '']);
         $duration = get_config('factor_sms', 'duration');
         $newcode = random_int(100000, 999999);
 
@@ -211,8 +243,9 @@ class factor extends object_factor_base {
                      FROM {tool_mfa}
                     WHERE userid = ?
                       AND factor = ?
-                      AND secret IS NULL';
-        $number = $DB->get_field_sql($numsql, [$USER->id, $this->name]);
+                      AND secret = ?
+                      AND revoked = 0';
+        $number = $DB->get_field_sql($numsql, [$USER->id, $this->name, '']);
 
         if (empty($record)) {
             // No code active, generate new code.
@@ -276,8 +309,8 @@ class factor extends object_factor_base {
                   FROM {tool_mfa}
                  WHERE userid = ?
                    AND factor = ?
-               AND label IS NOT NULL';
-        $record = $DB->get_record_sql($sql, array($USER->id, 'sms'));
+                   AND secret <> ?';
+        $record = $DB->get_record_sql($sql, [$USER->id, $this->name, '']);
 
         if ($enteredcode == $record->secret) {
             if ($record->timecreated + $duration > time()) {
@@ -297,8 +330,8 @@ class factor extends object_factor_base {
         // Delete all SMS records except base record.
         $selectsql = 'userid = ?
                   AND factor = ?
-                  AND label IS NOT NULL';
-        $DB->delete_records_select('tool_mfa', $selectsql, array($USER->id, 'sms'));
+                  AND secret <> ?';
+        $DB->delete_records_select('tool_mfa', $selectsql, array($USER->id, $this->name, ''));
 
         // Update factor timeverified.
         parent::post_pass_state();

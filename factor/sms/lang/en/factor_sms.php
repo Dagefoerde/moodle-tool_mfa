@@ -41,3 +41,8 @@ $string['smsstring'] = '{$a->code} is your {$a->site} authentication code.
 @{$a->url} #{$a->code}';
 $string['verificationcode'] = 'Enter verification code for confirmation';
 $string['verificationcode_help'] = 'Verification code has been sent to your email address';
+$string['info'] = 'Setup a phone number to receive MFA tokens on.';
+$string['setupfactor'] = 'SMS factor setup';
+$string['summarycondition'] = 'Using an SMS token';
+$string['wrongcode'] = 'Invalid verification code.';
+$string['action:revoke'] = 'Revoke SMS factor';

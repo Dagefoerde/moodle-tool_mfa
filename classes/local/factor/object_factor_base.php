@@ -318,6 +318,15 @@ abstract class object_factor_base implements object_factor {
     }
 
     /**
+     * If has_setup returns true, decides if the setup buttons should be shown on the preferences page.
+     *
+     * @return bool
+     */
+    public function show_setup_buttons() {
+        return false;
+    }
+
+    /**
      * Returns true if a factor requires input from the user to verify.
      *
      * Override in child class if necessary

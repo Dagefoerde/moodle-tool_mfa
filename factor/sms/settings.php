@@ -24,6 +24,8 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
+global $CFG;
+require_once($CFG->dirroot . '/local/aws/classes/admin_settings_aws_region.php');
 
 $settings->add(new admin_setting_configcheckbox('factor_sms/enabled',
     new lang_string('settings:enablefactor', 'tool_mfa'),
@@ -44,22 +46,10 @@ $settings->add(new admin_setting_configpasswordunmask('factor_sms/api_secret',
     get_string('settings:aws:secret_help', 'factor_sms'),
     ''));
 
-// These are the only regions that  is available in.
-$regionoptions = array(
-    'us-east-1'      => 'US East (N. Virginia)',
-    'us-west-1'      => 'US West (N. California)',
-    'us-west-2'      => 'US West (Oregon)',
-    'ap-northeast-1' => 'Asia Pacific (Tokyo)',
-    'ap-south-1'     => 'Asia Pacific (Mumbai)',
-    'ap-southeast-1' => 'Asia Pacific (Singapore)',
-    'ap-southeast-2' => 'Asia Pacific (Sydney)',
-    'eu-west-1'      => 'EU (Ireland)',
-);
-$settings->add(new admin_setting_configselect('factor_sms/api_region',
+$settings->add(new local_aws\admin_settings_aws_region('factor_sms/api_region',
     get_string('settings:aws:region', 'factor_sms'),
     get_string('settings:aws:region_help', 'factor_sms'),
-    'ap-southeast-2',
-    $regionoptions));
+    'ap-southeast-2'));
 
 $settings->add(new admin_setting_configduration('factor_sms/duration',
     get_string('settings:duration', 'factor_sms'),

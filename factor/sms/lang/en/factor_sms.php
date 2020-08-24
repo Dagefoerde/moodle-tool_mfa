@@ -47,3 +47,5 @@ $string['summarycondition'] = 'Using an SMS token';
 $string['wrongcode'] = 'Invalid verification code.';
 $string['action:revoke'] = 'Revoke SMS factor';
 $string['awssdkrequired'] = 'The local_aws plugin leveraging the AWS SDK is required to use this factor. Please install local_aws.';
+$string['profilelink'] = 'Click here to edit your profile.';
+$string['profilesetnumber'] = 'This factor relies on a mobile number being set in your user profile. Please set the \'Mobile Phone\' field in your profile, then return here. <br> {$a}';

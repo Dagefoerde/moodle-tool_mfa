@@ -74,20 +74,38 @@ class factor extends object_factor_base {
         return $return;
     }
 
+    /**
+     * SMS Factor implementation.
+     *
+     * {@inheritDoc}
+     */
     public function setup_factor_form_definition($mform) {
         global $OUTPUT, $USER;
         if (empty($USER->phone2)) {
             // User has no phone number. Send them to profile to set it.
-            $profurl = new \moodle_url('user/edit.php', ['id' => $USER->id]);
+            $profurl = new \moodle_url('/user/edit.php', ['id' => $USER->id]);
             $proflink = \html_writer::link($profurl, get_string('profilelink', 'factor_sms'));
-            $mform->addElement('html', $OUTPUT->notification(get_string('profilesetnumber', 'factor_sms', $proflink), 'notifyinfo'));
+            $mform->addElement('html', $OUTPUT->notification(
+                get_string('profilesetnumber', 'factor_sms', $proflink), 'notifyinfo'));
+            $mform->addElement('hidden', 'verificationcode', 0);
         } else {
             $mform->addElement('text', 'verificationcode', get_string('verificationcode', 'factor_sms'),
-            ['autocomplete' => 'one-time-code']);
-            $mform->setType("verificationcode", PARAM_INT);
+            [
+                'autocomplete' => 'one-time-code',
+                'autofocus' => 'autofocus',
+                'inputmode' => 'numeric',
+                'pattern'   => '[0-9]*',
+            ]);
         }
+        $mform->setType("verificationcode", PARAM_INT);
+
     }
 
+    /**
+     * SMS Factor implementation.
+     *
+     * {@inheritDoc}
+     */
     public function setup_factor_form_definition_after_data($mform) {
         global $USER, $SESSION;
 
@@ -110,8 +128,18 @@ class factor extends object_factor_base {
         }
     }
 
-    public function setup_factor_form_validation($data){
-        global $SESSION;
+    /**
+     * SMS Factor implementation.
+     *
+     * {@inheritDoc}
+     */
+    public function setup_factor_form_validation($data) {
+        global $SESSION, $USER;
+
+        // Prevent submission if they dont have a number added.
+        if (empty($USER->phone2)) {
+            return ['verificationcode' => ''];
+        }
 
         $errors = [];
         if ($data['verificationcode'] !== $SESSION->mfa_sms_setup_code) {
@@ -123,6 +151,11 @@ class factor extends object_factor_base {
 
     public function setup_user_factor($data) {
         global $DB, $SESSION, $USER;
+
+        // Nothing if they dont have a number added.
+        if (empty($USER->phone2)) {
+            return 0;
+        }
 
         $row = new \stdClass();
         $row->userid = $USER->id;

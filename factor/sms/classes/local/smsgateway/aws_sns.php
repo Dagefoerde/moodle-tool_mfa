@@ -59,12 +59,6 @@ class aws_sns implements gateway_interface {
             ],
         ]);
 
-        // Phone number mangling here to make it happy.
-        if (strpos($phonenumber, '+' !== 0)) {
-            // Not in the right standard. Transform it.
-            // TODO AWS Pinpoint verification.
-        }
-
         // Actually send the message.
         $client->publish([
             'Message' => $messagecontent,

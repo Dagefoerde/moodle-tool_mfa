@@ -194,6 +194,21 @@ class factor extends object_factor_base {
      *
      * {@inheritDoc}
      */
+    public function is_enabled() {
+        global $CFG;
+        // If local_aws is not installed, not enabled.
+        if (!file_exists($CFG->dirroot . '/local/aws/version.php')) {
+            return false;
+        } else {
+            return parent::is_enabled();
+        }
+    }
+
+    /**
+     * SMS Factor implementation.
+     *
+     * {@inheritDoc}
+     */
     public function has_input() {
         return true;
     }
